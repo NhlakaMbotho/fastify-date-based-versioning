@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(grep -o '\"Operation\"[^,]*\\\\|wrapComponents[^}]*\\\\|components:{[^}]*Operation[^}]*}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}
