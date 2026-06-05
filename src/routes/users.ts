@@ -31,10 +31,6 @@ const createServiceMap = {
 const acceptVersionHeader = {
   type: 'object',
   properties: {
-    'accept-version': {
-      type: 'string',
-      enum: ['2023.01.01', '2024.06.01', '2025.03.01'],
-    },
   },
 }
 
@@ -45,7 +41,6 @@ export async function userRoutes(app: FastifyInstance) {
       headers: acceptVersionHeader,
       tags: ['Users'],
       summary: 'List users',
-      description: 'Send `Accept-Version: YYYY.MM.DD` to pin to a release.\n- `2023.01.01` — v1: initial release\n- `2024.06.01` — v2: name split into firstName/lastName\n- `2025.03.01` — v3: address field added\n\nOmit to default to v1.',
       operationId: 'listUsers',
     },
   }, async (request, reply) => {
@@ -60,7 +55,6 @@ export async function userRoutes(app: FastifyInstance) {
       headers: acceptVersionHeader,
       tags: ['Users'],
       summary: 'Update user',
-      description: 'Send `Accept-Version: YYYY.MM.DD` to pin to a release.\n- `2023.01.01` — v1: initial release\n- `2024.06.01` — v2: name split into firstName/lastName\n- `2025.03.01` — v3: address field added\n\nOmit to default to v1.',
       operationId: 'updateUser',
     },
   }, async (request, reply) => {
@@ -77,7 +71,6 @@ export async function userRoutes(app: FastifyInstance) {
       headers: acceptVersionHeader,
       tags: ['Users'],
       summary: 'Create user',
-      description: 'Send `Accept-Version: YYYY.MM.DD` to pin to a release.\n- `2023.01.01` — v1: `{ name, email }`\n- `2024.06.01` — v2: `{ firstName, lastName, email }`\n- `2025.03.01` — v3: `{ firstName, lastName, email, address }`\n\nOmit to default to v1.',
       operationId: 'createUser',
     },
   }, async (request, reply) => {

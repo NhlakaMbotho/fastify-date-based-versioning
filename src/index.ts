@@ -5,12 +5,42 @@ import { userRoutes } from './routes/users'
 
 const app = Fastify({ logger: true })
 
+// Maps "METHOD /path" (OpenAPI format) → date versions that support it.
+// Update this whenever a new version adds or removes an endpoint.
+const VERSION_CONFIG: Record<string, string[]> = {
+  'GET /api/users': ['2023.01.01', '2024.06.01', '2025.03.01'],
+  'POST /api/users': [],
+  'PATCH /api/users/{id}': ['2023.01.01', '2024.06.01', '2025.03.01'],
+  'DELETE /api/users/{id}': [],
+}
+
+const EXAMPLES_CONFIG: Record<string, Record<string, { response?: unknown; request?: unknown }>> = {
+  'GET /api/users': {
+    '2023.01.01': { response: [{ id: 'string', name: 'string', email: 'user@example.com' }] },
+    '2024.06.01': { response: [{ id: 'string', firstName: 'string', lastName: 'string', email: 'user@example.com' }] },
+    '2025.03.01': { response: [{ id: 'string', firstName: 'string', lastName: 'string', email: 'user@example.com', address: { street: 'string', city: 'string', country: 'string' } }] },
+  },
+  'PATCH /api/users/{id}': {
+    '2023.01.01': {
+      request: { name: 'string', email: 'user@example.com' },
+      response: { id: 'string', name: 'string', email: 'user@example.com' },
+    },
+    '2024.06.01': {
+      request: { firstName: 'string', lastName: 'string', email: 'user@example.com' },
+      response: { id: 'string', firstName: 'string', lastName: 'string', email: 'user@example.com' },
+    },
+    '2025.03.01': {
+      request: { firstName: 'string', lastName: 'string', email: 'user@example.com', address: { street: 'string', city: 'string', country: 'string' } },
+      response: { id: 'string', firstName: 'string', lastName: 'string', email: 'user@example.com', address: { street: 'string', city: 'string', country: 'string' } },
+    },
+  },
+}
+
 app.register(swagger, {
   openapi: {
     openapi: '3.0.0',
     info: {
       title: 'Users API',
-      description: 'Date-based header versioning. Send `Accept-Version: YYYY.MM.DD` to pin to a release.',
       version: '1.0.0',
     },
     tags: [
@@ -21,111 +51,129 @@ app.register(swagger, {
 
 app.register(swaggerUi, {
   routePrefix: '/docs',
-  uiConfig: {
-    docExpansion: 'list',
-    deepLinking: true,
-    tryItOutEnabled: true,
-    requestInterceptor: (request: any) => {
-      const version = (window as any).__apiVersion
-      if (version) request.headers['Accept-Version'] = version
-      return request
-    },
-  },
   theme: {
-    css: [
-      {
-        filename: 'version-badges.css',
-        content: `
-          #version-selector-wrapper {
-            display: flex; align-items: center; gap: 10px;
-            margin-left: auto; padding-right: 20px;
-          }
-          #version-selector-wrapper label {
-            color: #fff; font-size: 13px; font-weight: 600;
-            font-family: sans-serif; white-space: nowrap;
-          }
-          #api-version-select {
-            padding: 5px 12px; border-radius: 20px; border: none;
-            font-size: 13px; font-weight: 600; cursor: pointer;
-            background: #fff; color: #3b4151; outline: none;
-          }
-          .version-badge {
-            display: inline-block; padding: 3px 10px;
-            border-radius: 20px; font-size: 11px; font-weight: 700;
-            font-family: sans-serif; color: #fff; vertical-align: middle;
-          }
-          .version-badge.v1 { background: #49cc90; }
-          .version-badge.v2 { background: #61affe; }
-          .version-badge.v3 { background: #f93e3e; }
-        `,
-      },
-    ],
     js: [
       {
-        filename: 'version-selector.js',
+        filename: 'custom-version-btn.js',
         content: `
           (function () {
-            var VERSIONS = [
-              { value: '',           label: 'Default (earliest)',        badge: null },
-              { value: '2023.01.01', label: '2023.01.01 — v1 initial',   badge: { cls: 'v1', text: 'v1' } },
-              { value: '2024.06.01', label: '2024.06.01 — v2 name split',badge: { cls: 'v2', text: 'v2' } },
-              { value: '2025.03.01', label: '2025.03.01 — v3 + address', badge: { cls: 'v3', text: 'v3' } },
-            ];
-
-            function inject() {
-              var topbar = document.querySelector('.topbar-wrapper');
-              if (!topbar || document.getElementById('version-selector-wrapper')) return;
-
-              var wrapper = document.createElement('div');
-              wrapper.id = 'version-selector-wrapper';
-
-              var label = document.createElement('label');
-              label.textContent = 'Accept-Version:';
-              label.setAttribute('for', 'api-version-select');
-
-              var select = document.createElement('select');
-              select.id = 'api-version-select';
-              VERSIONS.forEach(function (v) {
-                var opt = document.createElement('option');
-                opt.value = v.value;
-                opt.textContent = v.label;
-                select.appendChild(opt);
-              });
-
-              var badge = document.createElement('span');
-              badge.id = 'version-active-badge';
-              badge.className = 'version-badge';
-              badge.style.display = 'none';
-
-              select.addEventListener('change', function () {
-                var chosen = VERSIONS.find(function (v) { return v.value === select.value; });
-                window.__apiVersion = select.value || null;
-                if (chosen && chosen.badge) {
-                  badge.className = 'version-badge ' + chosen.badge.cls;
-                  badge.textContent = chosen.badge.text;
-                  badge.style.display = 'inline-block';
-                } else {
-                  badge.style.display = 'none';
-                }
-              });
-
-              wrapper.appendChild(label);
-              wrapper.appendChild(select);
-              wrapper.appendChild(badge);
-              topbar.appendChild(wrapper);
+            var CONFIG = ${JSON.stringify(VERSION_CONFIG)};
+            var EXAMPLES = ${JSON.stringify(EXAMPLES_CONFIG)};
+            var savedContents = new WeakMap();
+            function arrowBg(color) {
+              var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill="' + color + '" d="M5 8l5 5 5-5z"/></svg>';
+              return 'url("data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) + '") center right 8px / 12px no-repeat #f7f7f7';
             }
-
-            var attempts = 0;
-            var interval = setInterval(function () {
-              inject();
-              if (document.getElementById('version-selector-wrapper') || ++attempts > 50) {
-                clearInterval(interval);
+            function applyColor(el, color) {
+              el.style.borderColor = color;
+              el.style.color = color;
+              el.style.background = arrowBg(color);
+            }
+            function fitWidth(sel) {
+              var ctx = document.createElement('canvas').getContext('2d');
+              ctx.font = '14px Arial, sans-serif';
+              var max = 0;
+              for (var i = 0; i < sel.options.length; i++) {
+                var w = ctx.measureText(sel.options[i].text).width;
+                if (w > max) max = w;
               }
-            }, 100);
+              sel.style.width = '160px';
+            }
+            function escHtml(s) {
+              return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+            function renderExample(opblock, version) {
+              var key = opblock.getAttribute('data-ver-key');
+              var examples = key && EXAMPLES[key];
+              var versionEx = (version && examples) ? examples[version] : null;
+              opblock.querySelectorAll('.highlight-code').forEach(function (c) {
+                if (!savedContents.has(c)) {
+                  savedContents.set(c, c.innerHTML);
+                }
+                if (!versionEx) {
+                  c.innerHTML = savedContents.get(c);
+                  return;
+                }
+                var isResponse = !!c.closest('.responses-wrapper');
+                var data = isResponse ? versionEx.response : versionEx.request;
+                if (data === undefined) {
+                  c.innerHTML = savedContents.get(c);
+                  return;
+                }
+                c.innerHTML = '<pre style="padding:10px;margin:0;color:#e6edf3;background:#1f2329;font-size:12px;font-family:monospace;white-space:pre-wrap;">' +
+                  escHtml(JSON.stringify(data, null, 2)) + '</pre>';
+              });
+            }
+            function injectDropdowns() {
+              document.querySelectorAll('.opblock:not([data-ver-btn])').forEach(function (opblock) {
+                opblock.setAttribute('data-ver-btn', '1');
+                var method = (opblock.querySelector('.opblock-summary-method') || {}).textContent || '';
+                var pathEl = opblock.querySelector('.opblock-summary-path span') || opblock.querySelector('.opblock-summary-path');
+                var path = pathEl ? pathEl.textContent : '';
+                var key = (method.trim() + ' ' + path.trim()).trim();
+                opblock.setAttribute('data-ver-key', key);
+                var versions = CONFIG[key] || [];
+                var el;
+                if (versions.length === 0) {
+                  el = document.createElement('span');
+                  el.textContent = 'Latest Version';
+                  el.style.cssText = 'display:inline-block;margin-bottom:6px;padding:5px 10px;background:#52c41a;color:#fff;border-radius:4px;font-size:14px;font-weight:700;font-family:sans-serif;opacity:0.4;vertical-align:middle;width:160px;text-align:center';
+                } else {
+                  var sel = document.createElement('select');
+                  sel.id = 'ver-sel-' + key.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
+                  sel.style.cssText = 'display:inline-block;text-align:center;';
+                  var latest = document.createElement('option');
+                  latest.value = '';
+                  latest.textContent = 'Latest Version';
+                  latest.selected = true;
+                  sel.appendChild(latest);
+                  versions.forEach(function (v) {
+                    var opt = document.createElement('option');
+                    opt.value = v;
+                    opt.textContent = v;
+                    sel.appendChild(opt);
+                  });
+                  fitWidth(sel);
+                  var warn = document.createElement('span');
+                  warn.textContent = 'You are using a deprecated API version.';
+                  warn.style.cssText = 'display:none;margin-left:10px;color:#fa8c16;font-size:12px;font-family:sans-serif;vertical-align:middle;';
+                  applyColor(sel, '#52c41a');
+                  sel.addEventListener('change', function () {
+                    var isLatest = sel.value === '';
+                    applyColor(sel, isLatest ? '#52c41a' : '#fa8c16');
+                    warn.style.display = isLatest ? 'none' : 'inline';
+                    if (isLatest) {
+                      opblock.removeAttribute('data-ver-selected');
+                    } else {
+                      opblock.setAttribute('data-ver-selected', sel.value);
+                    }
+                    renderExample(opblock, isLatest ? null : sel.value);
+                    sel.blur();
+                  });
+                  el = document.createElement('div');
+                  el.style.cssText = 'margin-bottom:6px;';
+                  el.appendChild(sel);
+                  el.appendChild(warn);
+                }
+                opblock.parentNode.insertBefore(el, opblock);
+              });
+              requestAnimationFrame(function () {
+                document.querySelectorAll('.opblock[data-ver-selected]').forEach(function (opblock) {
+                  renderExample(opblock, opblock.getAttribute('data-ver-selected'));
+                });
+              });
+            }
+            new MutationObserver(injectDropdowns).observe(document.documentElement, { childList: true, subtree: true });
+            injectDropdowns();
           })();
         `,
       },
     ],
+  },
+  uiConfig: {
+    docExpansion: 'list',
+    deepLinking: true,
+    tryItOutEnabled: true,
   },
 })
 
