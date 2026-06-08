@@ -25,7 +25,16 @@
       "Bash(grep -oP 'ModelCollapse extends Pe\\\\.Component\\\\{[^§]{0,2000}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
       "Bash(grep -oP '.{0,200}hideSelfOnExpand:!0.{0,400}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
       "Bash(grep -oP '.{0,800}hideSelfOnExpand:!0' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
-      "Bash(grep -oP 'ce=.{0,200}')"
+      "Bash(grep -oP 'ce=.{0,200}')",
+      "Bash(timeout 5 npm run dev)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3000/api/users -H \"Accept-Version: 2023.01.01\")",
+      "Bash(kill %1)",
+      "Bash(curl -s \"http://localhost:3000/docs/static/ver-config.js\")",
+      "Bash(curl -s \"http://localhost:3000/docs/static/js/ver-config.js\")",
+      "Bash(curl -s \"http://localhost:3000/docs/js/ver-config.js\")",
+      "Bash(curl -s \"http://localhost:3000/docs\")",
+      "Bash(curl -s \"http://localhost:3000/docs/static/theme/ver-config.js\")"
     ],
     "additionalDirectories": [
       "/Users/nhlaka/versioning-demo/src"

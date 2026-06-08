@@ -1,9 +1,22 @@
 (function () {
-  var SCHEMA_BADGES = {
-    UserV1: { label: 'User', version: '2023.01.01' },
-    UserV2: { label: 'User', version: '2024.06.01' },
-    UserV3: { label: 'User', version: null },
-  };
+  // Build inverse of __VERSION_INDEX_MAP__: version number → release date.
+  // e.g. { 1: '2023.01.01', 2: '2024.06.01', 3: '2025.03.01' }
+  var indexToDate = {};
+  var versionIndexMap = window.__VERSION_INDEX_MAP__ || {};
+  Object.keys(versionIndexMap).forEach(function (date) {
+    indexToDate[versionIndexMap[date]] = date;
+  });
+
+  // Resolve any schema name that follows the EntityV{n} convention.
+  // e.g. 'UserV2' → { label: 'User', version: '2024.06.01' }
+  // Returns null for names that don't match (e.g. 'Address').
+  function getBadgeInfo(schemaName) {
+    var match = schemaName.match(/^(.+)V(\d+)$/);
+    if (!match) return null;
+    var label = match[1];
+    var vIndex = parseInt(match[2], 10);
+    return { label: label, version: indexToDate[vIndex] || null };
+  }
 
   var BADGE_CSS = [
     'display:inline-block',
@@ -31,20 +44,16 @@
   }
 
   function decorate() {
-    // Collapsed state: hideSelfOnExpand removes the button on expand, so when collapsed
-    // the title is <span class="model model-title">{name}</span> with NO .model-title__text child.
+    // Collapsed state: title is <span class="model model-title">{name}</span>
     document.querySelectorAll('.model.model-title').forEach(function (el) {
-      if (el.querySelector('.model-title__text')) return; // expanded body — handled below
-      var name = el.textContent.trim();
-      var info = SCHEMA_BADGES[name];
+      if (el.querySelector('.model-title__text')) return; // expanded — handled below
+      var info = getBadgeInfo(el.textContent.trim());
       if (info) applyBadge(el, info);
     });
 
-    // Expanded state: the collapse button is gone (hideSelfOnExpand); the model body renders
-    // <span class="model model-title"><span class="model-title__text">{name}</span></span>.
+    // Expanded state: <span class="model-title__text">{name}</span>
     document.querySelectorAll('.model-title__text').forEach(function (el) {
-      var name = el.textContent.trim();
-      var info = SCHEMA_BADGES[name];
+      var info = getBadgeInfo(el.textContent.trim());
       if (info) applyBadge(el, info);
     });
   }

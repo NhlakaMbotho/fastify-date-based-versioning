@@ -1,81 +1,63 @@
 import { FastifySchema } from 'fastify'
+import { userV1Schema } from './users/v1/users'
+import { userV2Schema } from './users/v2/users'
+import { userV3Schema } from './users/v3/users'
 
-export interface UserV1 {
-  id: string
-  name: string
-  email: string
+// Re-export interfaces so consumers import from one place
+export type { UserV1 } from './users/v1/users'
+export type { UserV2 } from './users/v2/users'
+export type { UserV3 } from './users/v3/users'
+export { addressSchema } from './users/shared'
+
+// ─── Version Registry ─────────────────────────────────────────────────────────
+// Maps each release date to its schema file. The vX/ files are the source of
+// truth — add a new version by creating schemas/users/vN/users.ts and linking
+// it here.
+
+export const VERSION_REGISTRY = {
+  '2023.01.01': userV1Schema,
+  '2024.06.01': userV2Schema,
+  '2025.03.01': userV3Schema,
+} as const
+
+export type ApiVersion = keyof typeof VERSION_REGISTRY
+export const API_VERSIONS = Object.keys(VERSION_REGISTRY) as ApiVersion[]
+
+// Explicit date → version-number map. Drives badge display: UserV2 → 2024.06.01.
+// Add a new entry whenever a new version is added above.
+export const VERSION_INDEX_MAP: Record<ApiVersion, number> = {
+  '2023.01.01': 1,
+  '2024.06.01': 2,
+  '2025.03.01': 3,
 }
 
-export interface UserV2 {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
+// ─── Endpoint availability ────────────────────────────────────────────────────
+
+export const ENDPOINT_VERSIONS: Record<string, ApiVersion[]> = {
+  'GET /api/users':         ['2023.01.01', '2024.06.01', '2025.03.01'],
+  'POST /api/users':        ['2023.01.01', '2024.06.01', '2025.03.01'],
+  'PATCH /api/users/{id}':  ['2023.01.01', '2024.06.01', '2025.03.01'],
+  'DELETE /api/users/{id}': [],
 }
 
-export interface UserV3 {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  address: {
-    street: string
-    city: string
-    country: string
-  }
+export const ENDPOINT_EXAMPLE_FIELDS: Record<string, {
+  request?: 'createBody' | 'updateBody'
+  response?: 'item'
+  responseIsArray?: boolean
+}> = {
+  'GET /api/users':         { response: 'item', responseIsArray: true },
+  'POST /api/users':        { request: 'createBody', response: 'item' },
+  'PATCH /api/users/{id}':  { request: 'updateBody', response: 'item' },
+  'DELETE /api/users/{id}': {},
 }
 
-export const addressObject = {
-  type: 'object' as const,
-  required: ['street', 'city', 'country'],
-  properties: {
-    street: { type: 'string' },
-    city: { type: 'string' },
-    country: { type: 'string' },
-  },
-}
+// ─── Derived Fastify schemas (auto-built from the registry) ───────────────────
 
-export const userV1Item = {
-  type: 'object',
-  required: ['id', 'name', 'email'],
-  properties: {
-    id: { type: 'string' },
-    name: { type: 'string' },
-    email: { type: 'string', format: 'email' },
-  },
-}
-
-export const userV2Item = {
-  type: 'object',
-  required: ['id', 'firstName', 'lastName', 'email'],
-  properties: {
-    id: { type: 'string' },
-    firstName: { type: 'string' },
-    lastName: { type: 'string' },
-    email: { type: 'string', format: 'email' },
-  },
-}
-
-export const userV3Item = {
-  type: 'object',
-  required: ['id', 'firstName', 'lastName', 'email', 'address'],
-  properties: {
-    id: { type: 'string' },
-    firstName: { type: 'string' },
-    lastName: { type: 'string' },
-    email: { type: 'string', format: 'email' },
-    address: addressObject,
-  },
-}
-
-export const userDynamicListSchema: FastifySchema = {
-  response: {
-    200: {
-      type: 'array',
-      items: { oneOf: [userV1Item, userV2Item, userV3Item] },
-    },
-  },
-}
+// Response schemas reference named components registered via app.addSchema().
+// Request body schemas stay inline — they aren't named components.
+const allItemRefs = API_VERSIONS.map(v => ({ $ref: `${VERSION_REGISTRY[v].openApiName}#` }))
+const allCreateBodies = API_VERSIONS.map(v => VERSION_REGISTRY[v].createBody)
+const allUpdateBodies = API_VERSIONS.map(v => VERSION_REGISTRY[v].updateBody)
 
 const userIdParams = {
   type: 'object',
@@ -83,101 +65,22 @@ const userIdParams = {
   properties: { id: { type: 'string' } },
 }
 
-const userV1UpdateBody = {
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    email: { type: 'string', format: 'email' },
-  },
-  additionalProperties: false,
+export const listFastifySchema: FastifySchema = {
+  response: { 200: { type: 'array', items: { oneOf: allItemRefs } } },
 }
 
-const userV2UpdateBody = {
-  type: 'object',
-  properties: {
-    firstName: { type: 'string' },
-    lastName: { type: 'string' },
-    email: { type: 'string', format: 'email' },
-  },
-  additionalProperties: false,
+export const createFastifySchema: FastifySchema = {
+  body: { oneOf: allCreateBodies },
+  response: { 201: { oneOf: allItemRefs } },
 }
 
-const userV3UpdateBody = {
-  type: 'object',
-  properties: {
-    firstName: { type: 'string' },
-    lastName: { type: 'string' },
-    email: { type: 'string', format: 'email' },
-    address: {
-      type: 'object',
-      properties: {
-        street: { type: 'string' },
-        city: { type: 'string' },
-        country: { type: 'string' },
-      },
-      additionalProperties: false,
-    },
-  },
-  additionalProperties: false,
-}
-
-export const userDynamicUpdateSchema: FastifySchema = {
+export const updateFastifySchema: FastifySchema = {
   params: userIdParams,
-  body: { oneOf: [userV1UpdateBody, userV2UpdateBody, userV3UpdateBody] },
-  response: { 200: { oneOf: [userV1Item, userV2Item, userV3Item] } },
+  body: { oneOf: allUpdateBodies },
+  response: { 200: { oneOf: allItemRefs } },
 }
 
-const userV1CreateBody = {
-  type: 'object',
-  required: ['name', 'email'],
-  properties: {
-    name: { type: 'string' },
-    email: { type: 'string', format: 'email' },
-  },
-  additionalProperties: false,
-}
-
-const userV2CreateBody = {
-  type: 'object',
-  required: ['firstName', 'lastName', 'email'],
-  properties: {
-    firstName: { type: 'string' },
-    lastName: { type: 'string' },
-    email: { type: 'string', format: 'email' },
-  },
-  additionalProperties: false,
-}
-
-const userV3CreateBody = {
-  type: 'object',
-  required: ['firstName', 'lastName', 'email', 'address'],
-  properties: {
-    firstName: { type: 'string' },
-    lastName: { type: 'string' },
-    email: { type: 'string', format: 'email' },
-    address: addressObject,
-  },
-  additionalProperties: false,
-}
-
-export const userDynamicCreateSchema: FastifySchema = {
-  body: { oneOf: [userV1CreateBody, userV2CreateBody, userV3CreateBody] },
-  response: {
-    201: { oneOf: [userV1Item, userV2Item, userV3Item] },
-  },
-}
-
-export const userDeleteSchema: FastifySchema = {
+export const deleteFastifySchema: FastifySchema = {
   params: userIdParams,
   response: { 204: { type: 'null' } },
 }
-
-const exampleAddress = { street: 'string', city: 'string', country: 'string' }
-
-export const exampleV1User = { id: 'string', name: 'string', email: 'user@example.com' }
-export const exampleV2User = { id: 'string', firstName: 'string', lastName: 'string', email: 'user@example.com' }
-export const exampleV3User = { id: 'string', firstName: 'string', lastName: 'string', email: 'user@example.com', address: exampleAddress }
-
-export const exampleV1UpdateBody = { name: 'string', email: 'user@example.com' }
-export const exampleV2UpdateBody = { firstName: 'string', lastName: 'string', email: 'user@example.com' }
-export const exampleV3UpdateBody = { firstName: 'string', lastName: 'string', email: 'user@example.com', address: exampleAddress }
