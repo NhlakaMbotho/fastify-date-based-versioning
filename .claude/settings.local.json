@@ -3,7 +3,32 @@
     "allow": [
       "Bash(npm install *)",
       "Bash(grep -o '\"Operation\"[^,]*\\\\|wrapComponents[^}]*\\\\|components:{[^}]*Operation[^}]*}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(mkdir -p /Users/nhlaka/versioning-demo/src/public)",
+      "Bash(grep -o '.\\\\{0,120\\\\}body-param__text.\\\\{0,120\\\\}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -Fo '.{0,80}body-param__text.{0,80}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(python3 -c ' *)",
+      "Bash(git stash *)",
+      "Bash(npx tsc *)",
+      "Bash(node -e \"const s = require\\('./node_modules/@fastify/swagger'\\); console.log\\(Object.keys\\(s\\)\\)\")",
+      "Bash(grep -oP 'className:\"model-container[^\"]*\"[^;]{0,300}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'collapsedContent[^,]{0,200}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'getCollapsedContent[^\\)]{0,400}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'getCollapsedContent=\\\\\\([^\\)]*\\\\\\)[^;]{0,300}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'displayName:ee[^}]{0,400}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP '\"model-title__text\"[^\\)]{0,100}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'collapsed[^;]{0,400}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'render\\\\\\(\\\\\\)\\\\{[^}]{0,600}model-title[^}]{0,200}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP '.{0,50}this\\\\.props\\\\.title.{0,200}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'props\\\\.title.{0,300}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'ModelCollapse[^{]{0,30}\\\\{[^}]{0,800}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'ModelCollapse extends Pe\\\\.Component\\\\{[^§]{0,2000}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP '.{0,200}hideSelfOnExpand:!0.{0,400}' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP '.{0,800}hideSelfOnExpand:!0' /Users/nhlaka/versioning-demo/node_modules/@fastify/swagger-ui/static/swagger-ui-bundle.js)",
+      "Bash(grep -oP 'ce=.{0,200}')"
+    ],
+    "additionalDirectories": [
+      "/Users/nhlaka/versioning-demo/src"
     ]
   }
 }

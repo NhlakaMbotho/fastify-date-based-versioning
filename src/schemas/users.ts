@@ -25,7 +25,7 @@ export interface UserV3 {
   }
 }
 
-const addressObject = {
+export const addressObject = {
   type: 'object' as const,
   required: ['street', 'city', 'country'],
   properties: {
@@ -35,7 +35,7 @@ const addressObject = {
   },
 }
 
-const userV1Item = {
+export const userV1Item = {
   type: 'object',
   required: ['id', 'name', 'email'],
   properties: {
@@ -45,7 +45,7 @@ const userV1Item = {
   },
 }
 
-const userV2Item = {
+export const userV2Item = {
   type: 'object',
   required: ['id', 'firstName', 'lastName', 'email'],
   properties: {
@@ -56,7 +56,7 @@ const userV2Item = {
   },
 }
 
-const userV3Item = {
+export const userV3Item = {
   type: 'object',
   required: ['id', 'firstName', 'lastName', 'email', 'address'],
   properties: {
@@ -171,3 +171,13 @@ export const userDeleteSchema: FastifySchema = {
   params: userIdParams,
   response: { 204: { type: 'null' } },
 }
+
+const exampleAddress = { street: 'string', city: 'string', country: 'string' }
+
+export const exampleV1User = { id: 'string', name: 'string', email: 'user@example.com' }
+export const exampleV2User = { id: 'string', firstName: 'string', lastName: 'string', email: 'user@example.com' }
+export const exampleV3User = { id: 'string', firstName: 'string', lastName: 'string', email: 'user@example.com', address: exampleAddress }
+
+export const exampleV1UpdateBody = { name: 'string', email: 'user@example.com' }
+export const exampleV2UpdateBody = { firstName: 'string', lastName: 'string', email: 'user@example.com' }
+export const exampleV3UpdateBody = { firstName: 'string', lastName: 'string', email: 'user@example.com', address: exampleAddress }
