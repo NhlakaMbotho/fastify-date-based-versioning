@@ -2,7 +2,6 @@ import { FastifyInstance } from 'fastify'
 import {
   VERSION_REGISTRY as usersVersions,
   ENDPOINT_VERSIONS as usersEndpoints,
-  ENDPOINT_EXAMPLE_FIELDS as usersExampleFields,
   VERSION_INDEX_MAP as usersVersionIndexMap,
   addressSchema,
 } from './schemas/users'
@@ -14,13 +13,6 @@ export type VersionEntry = {
   openApiName: string
   description: string
   item: object
-  examples: Record<string, object>
-}
-
-export type ExampleFields = {
-  request?: string
-  response?: string
-  responseIsArray?: boolean
 }
 
 export type ResourceDefinition = {
@@ -28,8 +20,6 @@ export type ResourceDefinition = {
   versionRegistry: Record<string, VersionEntry>
   /** Which versions each endpoint supports. Empty array = version-agnostic. */
   endpointVersions: Record<string, string[]>
-  /** Maps each endpoint to which example fields in the registry apply. */
-  endpointExampleFields: Record<string, ExampleFields>
   /** Explicit date → version-number map (e.g. '2024.06.01' → 2).
    *  Used by the Swagger badge JS to display EntityV2 → 2024.06.01. */
   versionIndexMap: Record<string, number>
@@ -47,7 +37,6 @@ export const API_REGISTRY: Record<string, ResourceDefinition> = {
   users: {
     versionRegistry: usersVersions as Record<string, VersionEntry>,
     endpointVersions: usersEndpoints,
-    endpointExampleFields: usersExampleFields,
     versionIndexMap: usersVersionIndexMap,
     sharedSchemas: { Address: addressSchema },
     registerRoutes: userRoutes,
@@ -56,7 +45,6 @@ export const API_REGISTRY: Record<string, ResourceDefinition> = {
   // cars: {
   //   versionRegistry: carsVersions as Record<string, VersionEntry>,
   //   endpointVersions: carsEndpoints,
-  //   endpointExampleFields: carsExampleFields,
   //   registerRoutes: carRoutes,
   // },
 }

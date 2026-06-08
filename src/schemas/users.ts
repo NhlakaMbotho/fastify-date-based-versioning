@@ -40,21 +40,29 @@ export const ENDPOINT_VERSIONS: Record<string, ApiVersion[]> = {
   'DELETE /api/users/{id}': [],
 }
 
-export const ENDPOINT_EXAMPLE_FIELDS: Record<string, {
-  request?: 'createBody' | 'updateBody'
-  response?: 'item'
-  responseIsArray?: boolean
-}> = {
-  'GET /api/users':         { response: 'item', responseIsArray: true },
-  'POST /api/users':        { request: 'createBody', response: 'item' },
-  'PATCH /api/users/{id}':  { request: 'updateBody', response: 'item' },
-  'DELETE /api/users/{id}': {},
+// ─── Per-version OpenAPI examples ─────────────────────────────────────────────
+// Builds the named examples map for the `content` form of a route schema.
+// @fastify/swagger passes `content` objects through directly to the OpenAPI spec.
+
+function versionExamples(
+  endpoint: string,
+  field: 'item' | 'createBody' | 'updateBody',
+  array = false,
+): Record<string, { summary: string; value: unknown }> {
+  return Object.fromEntries(
+    (ENDPOINT_VERSIONS[endpoint] ?? []).map(v => {
+      const val = (VERSION_REGISTRY[v].examples as Record<string, unknown>)[field]
+      return [v, { summary: `Version ${v}`, value: array ? [val] : val }]
+    }),
+  )
 }
 
 // ─── Derived Fastify schemas (auto-built from the registry) ───────────────────
+// Responses use $ref to named components registered via app.addSchema().
+// Examples are embedded here using the OpenAPI `content` wrapper so
+// @fastify/swagger places them at the correct spec path natively —
+// no transformObject post-processing needed.
 
-// Response schemas reference named components registered via app.addSchema().
-// Request body schemas stay inline — they aren't named components.
 const allItemRefs = API_VERSIONS.map(v => ({ $ref: `${VERSION_REGISTRY[v].openApiName}#` }))
 const allCreateBodies = API_VERSIONS.map(v => VERSION_REGISTRY[v].createBody)
 const allUpdateBodies = API_VERSIONS.map(v => VERSION_REGISTRY[v].updateBody)
@@ -66,18 +74,51 @@ const userIdParams = {
 }
 
 export const listFastifySchema: FastifySchema = {
-  response: { 200: { type: 'array', items: { oneOf: allItemRefs } } },
+  response: {
+    200: {
+      content: {
+        'application/json': {
+          schema: { type: 'array', items: { oneOf: allItemRefs } },
+          examples: versionExamples('GET /api/users', 'item', true),
+        },
+      },
+    },
+  },
 }
 
 export const createFastifySchema: FastifySchema = {
-  body: { oneOf: allCreateBodies },
-  response: { 201: { oneOf: allItemRefs } },
+  body: {
+    oneOf: allCreateBodies,
+    'x-examples': versionExamples('POST /api/users', 'createBody'),
+  },
+  response: {
+    201: {
+      content: {
+        'application/json': {
+          schema: { oneOf: allItemRefs },
+          examples: versionExamples('POST /api/users', 'item'),
+        },
+      },
+    },
+  },
 }
 
 export const updateFastifySchema: FastifySchema = {
   params: userIdParams,
-  body: { oneOf: allUpdateBodies },
-  response: { 200: { oneOf: allItemRefs } },
+  body: {
+    oneOf: allUpdateBodies,
+    'x-examples': versionExamples('PATCH /api/users/{id}', 'updateBody'),
+  },
+  response: {
+    200: {
+      content: {
+        'application/json': {
+          schema: { oneOf: allItemRefs },
+          examples: versionExamples('PATCH /api/users/{id}', 'item'),
+        },
+      },
+    },
+  },
 }
 
 export const deleteFastifySchema: FastifySchema = {

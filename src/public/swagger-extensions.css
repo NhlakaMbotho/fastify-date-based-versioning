@@ -1,0 +1,76 @@
+/* ── Schema badges (schema-badges.js) ───────────────────────────────────────*/
+
+.model-box .model {
+  margin-top: 10px;
+}
+
+.ver-schema-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #fa8c16;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: sans-serif;
+  vertical-align: middle;
+  margin-left: 6px;
+  line-height: 1.6;
+}
+
+/* ── Version selector (operation-version-selector.js) ───────────────────────*/
+
+.examples-select {
+  display: none !important;
+}
+
+.ver-latest-badge {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 5px 10px;
+  background: #52c41a;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: sans-serif;
+  opacity: 0.4;
+  vertical-align: middle;
+  width: 150px;
+  text-align: center;
+}
+
+.ver-selector-wrap {
+  margin-bottom: 6px;
+}
+
+.ver-selector {
+  display: inline-block;
+  text-align: center;
+  width: 150px;
+}
+
+.ver-selector.latest {
+  border-color: #52c41a;
+  color: #52c41a;
+  background: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path fill='%2352c41a' d='M5 8l5 5 5-5z'/></svg>") center right 8px / 12px no-repeat #f7f7f7;
+}
+
+.ver-selector.deprecated {
+  border-color: #fa8c16;
+  color: #fa8c16;
+  background: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path fill='%23fa8c16' d='M5 8l5 5 5-5z'/></svg>") center right 8px / 12px no-repeat #f7f7f7;
+}
+
+.ver-warn {
+  display: none;
+  margin-left: 10px;
+  color: #fa8c16;
+  font-size: 12px;
+  font-family: sans-serif;
+  vertical-align: middle;
+}
+
+.ver-warn.active {
+  display: inline;
+}

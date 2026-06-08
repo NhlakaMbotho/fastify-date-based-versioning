@@ -34,10 +34,16 @@
       "Bash(curl -s \"http://localhost:3000/docs/static/js/ver-config.js\")",
       "Bash(curl -s \"http://localhost:3000/docs/js/ver-config.js\")",
       "Bash(curl -s \"http://localhost:3000/docs\")",
-      "Bash(curl -s \"http://localhost:3000/docs/static/theme/ver-config.js\")"
+      "Bash(curl -s \"http://localhost:3000/docs/static/theme/ver-config.js\")",
+      "Bash(pkill -f \"ts-node src/index.ts\")",
+      "Bash(curl -s http://localhost:3000/docs/json)",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const s=JSON.parse\\(d\\); const post=s.paths['/api/users'].post; console.log\\(JSON.stringify\\(post.requestBody, null, 2\\)\\)\")",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill -9)"
     ],
     "additionalDirectories": [
-      "/Users/nhlaka/versioning-demo/src"
+      "/Users/nhlaka/versioning-demo/src",
+      "/tmp"
     ]
   }
 }
