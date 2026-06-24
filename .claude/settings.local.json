@@ -39,7 +39,13 @@
       "Bash(curl -s http://localhost:3000/docs/json)",
       "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const s=JSON.parse\\(d\\); const post=s.paths['/api/users'].post; console.log\\(JSON.stringify\\(post.requestBody, null, 2\\)\\)\")",
       "Bash(lsof -ti:3000)",
-      "Bash(xargs kill -9)"
+      "Bash(xargs kill -9)",
+      "Bash(npx ts-node -e ' *)",
+      "Bash(curl -s http://localhost:3000/docs/static/swagger-initializer.js)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
+      "Skill(simplify)",
+      "Skill(simplify:*)",
+      "Bash(npm view *)"
     ],
     "additionalDirectories": [
       "/Users/nhlaka/versioning-demo/src",

@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify'
+import { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { resolveVersion } from '../plugins/dateVersionResolver'
 import {
   getUsersV1, getUsersV2, getUsersV3,
@@ -10,6 +11,10 @@ import {
 } from '../services/users'
 import {
   API_VERSIONS,
+  userIdParamsZodSchema,
+  acceptVersionHeaderZodSchema,
+  createBodyZodSchema,
+  updateBodyZodSchema,
   listFastifySchema,
   createFastifySchema,
   updateFastifySchema,
@@ -34,68 +39,74 @@ const createServiceMap = {
   '2025.03.01': createUserV3 as (body: CreateBasic | CreateNamed | CreateAddressed) => ReturnType<typeof createUserV3>,
 } as const
 
-const acceptVersionHeader = {
-  type: 'object',
-  properties: {},
-}
-
 export async function userRoutes(app: FastifyInstance) {
-  app.get('/api/users', {
+  const typedApp = app.withTypeProvider<ZodTypeProvider>()
+
+  typedApp.get('/api/users', {
     schema: {
       ...listFastifySchema,
-      headers: acceptVersionHeader,
+      headers: acceptVersionHeaderZodSchema,
       tags: ['Users'],
       summary: 'List users',
       operationId: 'listUsers',
     },
   }, async (request, reply) => {
-    const version = resolveVersion(request.headers['accept-version'] as string | undefined, API_VERSIONS)
+    const version = resolveVersion(request.headers['accept-version'], API_VERSIONS)
     reply.header('X-Api-Version', version)
     return listServiceMap[version as keyof typeof listServiceMap]()
   })
 
-  app.patch<{ Params: { id: string }; Body: UpdateBasic & UpdateNamed & UpdateAddressed }>('/api/users/:id', {
+  typedApp.patch('/api/users/:id', {
     schema: {
       ...updateFastifySchema,
-      headers: acceptVersionHeader,
+      params: userIdParamsZodSchema,
+      body: updateBodyZodSchema,
+      headers: acceptVersionHeaderZodSchema,
       tags: ['Users'],
       summary: 'Update user',
       operationId: 'updateUser',
     },
   }, async (request, reply) => {
-    const version = resolveVersion(request.headers['accept-version'] as string | undefined, API_VERSIONS)
+    const version = resolveVersion(request.headers['accept-version'], API_VERSIONS)
     reply.header('X-Api-Version', version)
-    const user = updateServiceMap[version as keyof typeof updateServiceMap](request.params.id, request.body)
+    const user = updateServiceMap[version as keyof typeof updateServiceMap](
+      request.params.id,
+      request.body as UpdateBasic | UpdateNamed | UpdateAddressed,
+    )
     if (!user) return reply.status(404).send({ error: 'User not found' })
     return user
   })
 
-  app.post<{ Body: CreateBasic & CreateNamed & CreateAddressed }>('/api/users', {
+  typedApp.post('/api/users', {
     schema: {
       ...createFastifySchema,
-      headers: acceptVersionHeader,
+      body: createBodyZodSchema,
+      headers: acceptVersionHeaderZodSchema,
       tags: ['Users'],
       summary: 'Create user',
       operationId: 'createUser',
     },
   }, async (request, reply) => {
-    const version = resolveVersion(request.headers['accept-version'] as string | undefined, API_VERSIONS)
+    const version = resolveVersion(request.headers['accept-version'], API_VERSIONS)
     reply.header('X-Api-Version', version)
-    const user = createServiceMap[version as keyof typeof createServiceMap](request.body)
+    const user = createServiceMap[version as keyof typeof createServiceMap](
+      request.body as CreateBasic | CreateNamed | CreateAddressed,
+    )
     return reply.status(201).send(user)
   })
 
-  app.delete<{ Params: { id: string } }>('/api/users/:id', {
+  typedApp.delete('/api/users/:id', {
     schema: {
       ...deleteFastifySchema,
-      headers: acceptVersionHeader,
+      params: userIdParamsZodSchema,
+      headers: acceptVersionHeaderZodSchema,
       tags: ['Users'],
       summary: 'Delete user',
       description: 'Permanently removes a user. Version-agnostic — the `Accept-Version` header is accepted for consistency but does not affect the response.',
       operationId: 'deleteUser',
     },
   }, async (request, reply) => {
-    const version = resolveVersion(request.headers['accept-version'] as string | undefined, API_VERSIONS)
+    const version = resolveVersion(request.headers['accept-version'], API_VERSIONS)
     reply.header('X-Api-Version', version)
     const deleted = deleteUser(request.params.id)
     if (!deleted) return reply.status(404).send({ error: 'User not found' })

@@ -1,18 +1,16 @@
+import { z } from 'zod'
 import { FastifySchema } from 'fastify'
-import { userV1Schema } from './users/v1/users'
-import { userV2Schema } from './users/v2/users'
-import { userV3Schema } from './users/v3/users'
+import { userV1Schema, userV1CreateBodyZodSchema, userV1UpdateBodyZodSchema } from './users/v1/users'
+import { userV2Schema, userV2CreateBodyZodSchema, userV2UpdateBodyZodSchema } from './users/v2/users'
+import { userV3Schema, userV3CreateBodyZodSchema, userV3UpdateBodyZodSchema } from './users/v3/users'
 
-// Re-export interfaces so consumers import from one place
+// Re-export types so consumers import from one place
 export type { UserV1 } from './users/v1/users'
 export type { UserV2 } from './users/v2/users'
 export type { UserV3 } from './users/v3/users'
-export { addressSchema } from './users/shared'
+export { addressSchema, addressZodSchema } from './users/shared'
 
 // ─── Version Registry ─────────────────────────────────────────────────────────
-// Maps each release date to its schema file. The vX/ files are the source of
-// truth — add a new version by creating schemas/users/vN/users.ts and linking
-// it here.
 
 export const VERSION_REGISTRY = {
   '2023.01.01': userV1Schema,
@@ -23,8 +21,6 @@ export const VERSION_REGISTRY = {
 export type ApiVersion = keyof typeof VERSION_REGISTRY
 export const API_VERSIONS = Object.keys(VERSION_REGISTRY) as ApiVersion[]
 
-// Explicit date → version-number map. Drives badge display: UserV2 → 2024.06.01.
-// Add a new entry whenever a new version is added above.
 export const VERSION_INDEX_MAP: Record<ApiVersion, number> = {
   '2023.01.01': 1,
   '2024.06.01': 2,
@@ -34,15 +30,13 @@ export const VERSION_INDEX_MAP: Record<ApiVersion, number> = {
 // ─── Endpoint availability ────────────────────────────────────────────────────
 
 export const ENDPOINT_VERSIONS: Record<string, ApiVersion[]> = {
-  'GET /api/users':         ['2023.01.01', '2024.06.01', '2025.03.01'],
-  'POST /api/users':        ['2023.01.01', '2024.06.01', '2025.03.01'],
-  'PATCH /api/users/{id}':  ['2023.01.01', '2024.06.01', '2025.03.01'],
+  'GET /api/users': ['2023.01.01', '2024.06.01', '2025.03.01'],
+  'POST /api/users': ['2023.01.01', '2024.06.01', '2025.03.01'],
+  'PATCH /api/users/{id}': ['2023.01.01', '2024.06.01'],
   'DELETE /api/users/{id}': [],
 }
 
 // ─── Per-version OpenAPI examples ─────────────────────────────────────────────
-// Builds the named examples map for the `content` form of a route schema.
-// @fastify/swagger passes `content` objects through directly to the OpenAPI spec.
 
 function versionExamples(
   endpoint: string,
@@ -57,21 +51,43 @@ function versionExamples(
   )
 }
 
-// ─── Derived Fastify schemas (auto-built from the registry) ───────────────────
-// Responses use $ref to named components registered via app.addSchema().
-// Examples are embedded here using the OpenAPI `content` wrapper so
-// @fastify/swagger places them at the correct spec path natively —
-// no transformObject post-processing needed.
+// ─── Zod request schemas ──────────────────────────────────────────────────────
+// Used in routes for validation + automatic TypeScript inference.
+
+export const userIdParamsZodSchema = z.object({ id: z.string() })
+
+// Accept-Version is optional; passthrough lets other standard headers through.
+export const acceptVersionHeaderZodSchema = z.object({
+  'accept-version': z.string().optional(),
+}).passthrough()
+
+// Union tries most-specific version first so strict() correctly rejects bodies
+// that carry fields belonging to a later schema version.
+export const createBodyZodSchema = z.union([
+  userV3CreateBodyZodSchema,
+  userV2CreateBodyZodSchema,
+  userV1CreateBodyZodSchema,
+])
+
+export const updateBodyZodSchema = z.union([
+  userV3UpdateBodyZodSchema,
+  userV2UpdateBodyZodSchema,
+  userV1UpdateBodyZodSchema,
+])
+
+// x-examples for request bodies, keyed by "METHOD /openapi/path".
+// Used by the custom swagger transform to re-attach per-version examples after
+// jsonSchemaTransform converts the Zod union schema to plain JSON Schema.
+export const ROUTE_BODY_EXAMPLES: Record<string, Record<string, { summary: string; value: unknown }>> = {
+  'POST /api/users': versionExamples('POST /api/users', 'createBody'),
+  'PATCH /api/users/{id}': versionExamples('PATCH /api/users/{id}', 'updateBody'),
+}
+
+// ─── Response-only Fastify schemas ───────────────────────────────────────────
+// Body and params are now provided as Zod schemas directly in routes.
+// These objects carry only the `response` section (for OpenAPI docs).
 
 const allItemRefs = API_VERSIONS.map(v => ({ $ref: `${VERSION_REGISTRY[v].openApiName}#` }))
-const allCreateBodies = API_VERSIONS.map(v => VERSION_REGISTRY[v].createBody)
-const allUpdateBodies = API_VERSIONS.map(v => VERSION_REGISTRY[v].updateBody)
-
-const userIdParams = {
-  type: 'object',
-  required: ['id'],
-  properties: { id: { type: 'string' } },
-}
 
 export const listFastifySchema: FastifySchema = {
   response: {
@@ -87,10 +103,6 @@ export const listFastifySchema: FastifySchema = {
 }
 
 export const createFastifySchema: FastifySchema = {
-  body: {
-    oneOf: allCreateBodies,
-    'x-examples': versionExamples('POST /api/users', 'createBody'),
-  },
   response: {
     201: {
       content: {
@@ -104,11 +116,6 @@ export const createFastifySchema: FastifySchema = {
 }
 
 export const updateFastifySchema: FastifySchema = {
-  params: userIdParams,
-  body: {
-    oneOf: allUpdateBodies,
-    'x-examples': versionExamples('PATCH /api/users/{id}', 'updateBody'),
-  },
   response: {
     200: {
       content: {
@@ -122,6 +129,5 @@ export const updateFastifySchema: FastifySchema = {
 }
 
 export const deleteFastifySchema: FastifySchema = {
-  params: userIdParams,
   response: { 204: { type: 'null' } },
 }

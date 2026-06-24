@@ -1,16 +1,29 @@
-import { addressSchema } from '../shared'
+import { z } from 'zod'
+import { addressSchema, addressZodSchema } from '../shared'
 
-export interface UserV3 {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  address: {
-    street: string
-    city: string
-    country: string
-  }
-}
+export const userV3ItemZodSchema = z.object({
+  id: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  address: addressZodSchema,
+})
+
+export type UserV3 = z.infer<typeof userV3ItemZodSchema>
+
+export const userV3CreateBodyZodSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  address: addressZodSchema,
+}).strict()
+
+export const userV3UpdateBodyZodSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().email().optional(),
+  address: addressZodSchema.partial().optional(),
+}).strict()
 
 export const userV3Schema = {
   openApiName: 'UserV3',

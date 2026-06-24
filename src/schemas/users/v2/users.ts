@@ -1,9 +1,25 @@
-export interface UserV2 {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-}
+import { z } from 'zod'
+
+export const userV2ItemZodSchema = z.object({
+  id: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+})
+
+export type UserV2 = z.infer<typeof userV2ItemZodSchema>
+
+export const userV2CreateBodyZodSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+}).strict()
+
+export const userV2UpdateBodyZodSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().email().optional(),
+}).strict()
 
 export const userV2Schema = {
   openApiName: 'UserV2',
